@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Sets the string to use a replace target
 VER='VERSION'
 
@@ -114,13 +114,13 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
 get_version() {
-  if [ ! -n "${FILES[0]}" ]; then
+  if [ -z "${FILES[0]}" ]; then
     echo "No Files provided. Exiting..."
     exit
   fi
   MATCH=${FILES[0]#*;}
-  if [ -f ${FILES[0]%;*} ]; then
-    TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\6;\8/gp" ${FILES[0]%;*})
+  if [ -f "${FILES[0]%;*}" ]; then
+    TMPVERSION=$(sed -nr "s/${MATCH/$VER/$SEMVER}/\1;\2;\3;\5;\6;\8/gp" "${FILES[0]%;*}")
     IFS=';' read -r MAJOR MINOR PATCH PRERE PRERENUM BUILDT <<< "$TMPVERSION"; IFS=''
   else
     echo "File \"${FILES[0]%;*}\" does not exists"
@@ -129,19 +129,19 @@ get_version() {
 }
 
 set_version() {
-  if [ ! -z $SETVERSION ]; then
-    VERSION=$SETVERSION$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)
-  elif [ ! -z $BUMP ]; then
+  if [ -n "$SETVERSION" ]; then
+    VERSION=$SETVERSION$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
+  elif [ -n "$BUMP" ]; then
     if [ "${BUMP,,}" == "major" ]; then
-      VERSION=$((MAJOR + 1)).0.0$(if [ ! -z $PRERE ]; then echo -$PRERE; fi)$(if [ ! -z $BUILD ]; then echo +$BUILD; fi)
+      VERSION=$((MAJOR + 1)).0.0$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "minor" ]; then
-      VERSION=$MAJOR.$((MINOR + 1)).0$(if [ ! -z $PRERE ]; then echo -$PRERE; fi)$(if [ ! -z $BUILD ]; then echo +$BUILD; fi)
+      VERSION=$MAJOR.$((MINOR + 1)).0$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "patch" ]; then
-      VERSION=$MAJOR.$MINOR.$((PATCH + 1))$(if [ ! -z $PRERE ]; then echo -$PRERE; fi)$(if [ ! -z $BUILD ]; then echo +$BUILD; fi)
+      VERSION=$MAJOR.$MINOR.$((PATCH + 1))$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "prerelease" ]; then
-      VERSION=$MAJOR.$MINOR.$PATCH$(if [ -z $PRERE ]; then echo "-$PRERELEASE_STRING"; else echo "-${PRERELEASE_STRING}$(if [ -z $PRERENUM ]; then echo .1; else echo .$((PRERENUM + 1)); fi)$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)"; fi)
+      VERSION=$MAJOR.$MINOR.$PATCH$(if [ -z "$PRERE" ]; then echo "-$PRERELEASE_STRING"; else echo "-${PRERELEASE_STRING}$(if [ -z "$PRERENUM" ]; then echo ".1"; else echo ".$((PRERENUM + 1))"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)"; fi)
     elif [ "${BUMP,,}" == "release" ]; then
-      VERSION=$MAJOR.$MINOR.$PATCH$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)
+      VERSION=$MAJOR.$MINOR.$PATCH$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     else
       echo "No valid Version segment provided"
       exit 1
@@ -150,15 +150,14 @@ set_version() {
 }
 
 apply_version() {
-  OLDIFS=$IFS
   IFS=';'
 
   echo "Applying Version: $PREFIX$VERSION"
 
   for i in "${FILES[@]}"; do
     set -- $i
-    if [ -f $1 ]; then
-      sed -ri "s/${2/VERSION/$SEMVER}/${2/VERSION/$VERSION}/g" $1
+    if [ -f "$1" ]; then
+      sed -ri "s/${2/$VER/$SEMVER}/${2/$VER/$VERSION}/g" $1
     else
       echo "File \"$1\" does not exists"
       exit 1
@@ -172,15 +171,15 @@ if [[ -z $SETVERSION && -z $BUMP ]]; then
   help
   exit
 else
-  if [ -n "$@" ]; then
-    FILES=( "$@" )
+  if [ -n "$*" ]; then
+    FILES="$*"
   fi
   get_version
   set_version
   apply_version
   if [[ $GITCOMMIT -eq 1 ]]; then
     git commit -am "Bump version to $PREFIX$VERSION"
-    git tag -a $PREFIX$VERSION -m "Release version $PREFIX$VERSION"
+    git tag -a "$PREFIX$VERSION" -m "Release version $PREFIX$VERSION"
   fi
   if [[ $GITPUSH -eq 1 ]]; then
     git push --follow-tags
