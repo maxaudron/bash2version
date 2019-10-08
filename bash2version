@@ -9,7 +9,7 @@ PRERELEASE_STRING='rc'
 # in the form of FILE;REGEX
 # use $VER
 FILES=(
-  # 'package.json;"version": "$VER"'
+  # 'package.json;"version": "VERSION"'
 )
 
 # Regex used to parse semver
@@ -23,7 +23,7 @@ SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9]\d*|\d*[a-zA-
 help() {
   echo "bash2version - bump your version, in style, and with violence
 
-bash2version [--set VERSION | --build BUILD | --bump major|minor|patch|prerelease]
+bash2version [--set VERSION | --bump major|minor|patch|prerelease] [--build BUILD]
 
 OPTIONS:
   -b, --bump major|minor|patch|prerelease:
