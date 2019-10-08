@@ -21,9 +21,9 @@ FILES=(
 SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.0|\.[1-9]\d*|\.\d*[a-zA-Z-][0-9a-zA-Z-]*)*)?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?'
 
 help() {
-  echo "bash2version - bump your version, in style, and with violence
+  echo "bash2version - bash your version number into place
 
-bash2version [--set VERSION | --bump major|minor|patch|prerelease] [--build BUILD]
+bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [FILES]
 
 OPTIONS:
   -b, --bump major|minor|patch|prerelease:
@@ -34,7 +34,11 @@ OPTIONS:
       add build metadata specified by BUILD
 
   -s, --set VERSION:
-      set the version to the string provided by VERSION"
+      set the version to the string provided by VERSION
+
+  FILES:
+      the files and regex to run on in the format file;regex VERSION
+      Use VERSION as a placeholder for where the version would be"
 }
 
 # Check if an argument was provided to the given option;
@@ -45,36 +49,50 @@ check_arg_exist() {
     fi
 }
 
-while [[ "$1" != "" ]]; do
-    case "$1" in
-        -b | --bump)
-            check_arg_exist "$1" "$2"
-            BUMP=$2
-            shift 2
-        ;;
-        --build)
-            check_arg_exist "$1" "$2"
-            BUILD=$2
-            shift 2
-        ;;
-        -s | --set)
-            check_arg_exist "$1" "$2"
-            SETVERSION=$2
-            shift 2
-        ;;
-        --help)
-            help
-            exit
-            shift
-        ;;
-    esac
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    -b | --bump)
+      check_arg_exist "$1" "$2"
+      BUMP=$2
+      shift
+      shift
+    ;;
+    --build)
+      check_arg_exist "$1" "$2"
+      BUILD=$2
+      shift
+      shift
+    ;;
+    -s | --set)
+      check_arg_exist "$1" "$2"
+      SETVERSION=$2
+      shift
+      shift
+    ;;
+    --help)
+      help
+      exit
+      shift
+    ;;
+    *)
+      POSITIONAL+=("$1")
+      shift
+    ;;
+  esac
 done
+set -- "${POSITIONAL[@]}" # restore positional parameters
 
 get_version() {
+  if [ ! -n "${FILES[0]}" ]; then
+    echo "No Files provided. Exiting..."
+    exit
+  fi
   MATCH=${FILES[0]#*;}
   TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\8/gp" ${FILES[0]%;*})
   IFS=';' read -r MAJOR MINOR PATCH PRERE BUILDT <<< "$TMPVERSION"; IFS=''
-  echo $MAJOR $MINOR $PATCH $PRERE $BUILDT
 }
 
 set_version() {
@@ -110,11 +128,13 @@ apply_version() {
   IFS=''
 }
 
-
 if [[ -z $SETVERSION && -z $BUMP ]]; then
   help
   exit
 else
+  if [ -n "$@" ]; then
+    FILES=( "$@" )
+  fi
   get_version
   set_version
   apply_version
