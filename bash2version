@@ -23,7 +23,7 @@ SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9]\d*|\d*[a-zA-
 help() {
   echo "bash2version - bash your version number into place
 
-bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [FILES]
+bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [-c | --commit] [-p | --push] [FILES]
 
 OPTIONS:
   -b, --bump major|minor|patch|prerelease:
@@ -72,6 +72,14 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
     ;;
+    -c | --commit)
+      GITCOMMIT=1
+      shift
+    ;;
+    -p | --push)
+      GITPUSH=1
+      shift
+    ;;
     --help)
       help
       exit
@@ -91,8 +99,13 @@ get_version() {
     exit
   fi
   MATCH=${FILES[0]#*;}
-  TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\8/gp" ${FILES[0]%;*})
-  IFS=';' read -r MAJOR MINOR PATCH PRERE BUILDT <<< "$TMPVERSION"; IFS=''
+  if [ -f ${FILES[0]%;*} ]; then
+    TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\8/gp" ${FILES[0]%;*})
+    IFS=';' read -r MAJOR MINOR PATCH PRERE BUILDT <<< "$TMPVERSION"; IFS=''
+  else
+    echo "File \"${FILES[0]%;*}\" does not exists"
+    exit 1
+  fi
 }
 
 set_version() {
@@ -122,7 +135,12 @@ apply_version() {
 
   for i in "${FILES[@]}"; do
     set -- $i
-    sed -ri "s/${2/VERSION/$SEMVER}/${2/VERSION/$VERSION}/g" $1
+    if [ -f $1 ]; then
+      sed -ri "s/${2/VERSION/$SEMVER}/${2/VERSION/$VERSION}/g" $1
+    else
+      echo "File \"$1\" does not exists"
+      exit 1
+    fi
   done
 
   IFS=''
@@ -138,5 +156,12 @@ else
   get_version
   set_version
   apply_version
+  if [[ $GITCOMMIT -eq 1 ]]; then
+    git commit -am "Bump version to $VERSION"
+    git tag $VERSION
+  fi
+  if [[ $GITPUSH -eq 1 ]]; then
+    git push --tags --all
+  fi
 fi
 
