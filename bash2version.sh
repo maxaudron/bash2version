@@ -9,7 +9,7 @@ PRERELEASE_STRING='rc'
 # in the form of FILE;REGEX
 # use $VER
 FILES=(
-  "testfile;test $VER"
+  # 'package.json;"version": "$VER"'
 )
 
 # Regex used to parse semver
