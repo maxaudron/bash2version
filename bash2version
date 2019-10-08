@@ -23,12 +23,12 @@ FILES=(
 # \3 = PATCH
 # \5 = PRERE
 # \8 = BUILD
-SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.0|\.[1-9]\d*|\.\d*[a-zA-Z-][0-9a-zA-Z-]*)*)?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?'
+SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\-?((0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)\.?(([0-9]\.*)*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?'
 
 help() {
   echo "bash2version - bash your version number into place
 
-bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [-c | --commit] [-p | --push] [FILES]
+bash2version --set VERSION | --bump major|minor|patch|prerelease|release [--build BUILD] [-c | --commit] [-p | --push] [FILES]
 
 OPTIONS:
   -b, --bump major|minor|patch|prerelease:
@@ -120,8 +120,8 @@ get_version() {
   fi
   MATCH=${FILES[0]#*;}
   if [ -f ${FILES[0]%;*} ]; then
-    TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\8/gp" ${FILES[0]%;*})
-    IFS=';' read -r MAJOR MINOR PATCH PRERE BUILDT <<< "$TMPVERSION"; IFS=''
+    TMPVERSION=$(sed -nr "s/.*${MATCH/VERSION/$SEMVER}.*/\1;\2;\3;\5;\6;\8/gp" ${FILES[0]%;*})
+    IFS=';' read -r MAJOR MINOR PATCH PRERE PRERENUM BUILDT <<< "$TMPVERSION"; IFS=''
   else
     echo "File \"${FILES[0]%;*}\" does not exists"
     exit 1
@@ -139,7 +139,9 @@ set_version() {
     elif [ "${BUMP,,}" == "patch" ]; then
       VERSION=$MAJOR.$MINOR.$((PATCH + 1))$(if [ ! -z $PRERE ]; then echo -$PRERE; fi)$(if [ ! -z $BUILD ]; then echo +$BUILD; fi)
     elif [ "${BUMP,,}" == "prerelease" ]; then
-      VERSION=$MAJOR.$MINOR.$PATCH$(if [ -z $PRERE ]; then echo "-$PRERELEASE_STRING"; fi)$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)
+      VERSION=$MAJOR.$MINOR.$PATCH$(if [ -z $PRERE ]; then echo "-$PRERELEASE_STRING"; else echo "-${PRERELEASE_STRING}$(if [ -z $PRERENUM ]; then echo .1; else echo .$((PRERENUM + 1)); fi)$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)"; fi)
+    elif [ "${BUMP,,}" == "release" ]; then
+      VERSION=$MAJOR.$MINOR.$PATCH$(if [ ! -z $BUILD ]; then echo "+$BUILD"; fi)
     else
       echo "No valid Version segment provided"
       exit 1
