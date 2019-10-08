@@ -5,11 +5,16 @@ VER='VERSION'
 # String used to signal a prerelease
 PRERELEASE_STRING='rc'
 
+# Version Prefix to add
+# PREFIX='v'
+PREFIX=''
+
 # Provide a list of files to modify and the regex to use for them
 # in the form of FILE;REGEX
 # use $VER
 FILES=(
-  # 'package.json;"version": "VERSION"'
+  # 'package.json;"version": "VERSION"' # Simple usage
+  # "package.json;\"version\": \"$PREFIX$VER\"" # add the version replace string and version prefix from variables
 )
 
 # Regex used to parse semver
@@ -33,8 +38,17 @@ OPTIONS:
   --build BUILD:
       add build metadata specified by BUILD
 
+  --prefix PREFIX:
+      set the prefix for the version
+
   -s, --set VERSION:
       set the version to the string provided by VERSION
+
+  -c, --commit:
+      git commit and git tag the version
+
+  -p, --push:
+      push the tag
 
   FILES:
       the files and regex to run on in the format file;regex VERSION
@@ -63,6 +77,12 @@ while [[ $# -gt 0 ]]; do
     --build)
       check_arg_exist "$1" "$2"
       BUILD=$2
+      shift
+      shift
+    ;;
+    --prefix)
+      check_arg_exist "$1" "$2"
+      PREFIX=$2
       shift
       shift
     ;;
@@ -131,7 +151,7 @@ apply_version() {
   OLDIFS=$IFS
   IFS=';'
 
-  echo "Applying Version: $VERSION"
+  echo "Applying Version: $PREFIX$VERSION"
 
   for i in "${FILES[@]}"; do
     set -- $i
@@ -157,11 +177,11 @@ else
   set_version
   apply_version
   if [[ $GITCOMMIT -eq 1 ]]; then
-    git commit -am "Bump version to $VERSION"
-    git tag $VERSION
+    git commit -am "Bump version to $PREFIX$VERSION"
+    git tag -a $PREFIX$VERSION -m "Release version $PREFIX$VERSION"
   fi
   if [[ $GITPUSH -eq 1 ]]; then
-    git push --tags --all
+    git push --follow-tags
   fi
 fi
 

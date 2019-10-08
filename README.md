@@ -28,7 +28,7 @@ and here have the `--help` text:
 ```
 bash2version - bump your version, in style, and with violence
 
-bash2version [--set VERSION | --bump major|minor|patch|prerelease] [--build BUILD]
+bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [-c | --commit] [-p | --push] [FILES]
 
 OPTIONS:
   -b, --bump major|minor|patch|prerelease:
@@ -38,6 +38,19 @@ OPTIONS:
   --build BUILD:
       add build metadata specified by BUILD
 
+  --prefix PREFIX:
+      set the prefix for the version
+
   -s, --set VERSION:
       set the version to the string provided by VERSION
+
+  -c, --commit:
+      git commit and git tag the version
+
+  -p, --push:
+      push the tag
+
+  FILES:
+      the files and regex to run on in the format file;regex VERSION
+      Use VERSION as a placeholder for where the version would be"
 ```
