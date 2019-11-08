@@ -26,14 +26,19 @@ And should you manage to have a collision with `VERSION` you can also set that t
 
 and here have the `--help` text:
 ```
-bash2version - bump your version, in style, and with violence
+bash2version - bash your version number into place
 
-bash2version --set VERSION | --bump major|minor|patch|prerelease [--build BUILD] [-c | --commit] [-p | --push] [FILES]
+bash2version --set VERSION | --bump major|minor|patch|prerelease|release [--pre | --rc | --devel] [--build BUILD] [-c | --commit] [-p | --push] [FILES]
 
 OPTIONS:
-  -b, --bump major|minor|patch|prerelease:
+  -b, --bump major|minor|patch|prerelease|release:
       bumps the specified version segment, prerelease either adds 
-      or removes the prerelease segment ('-rc' by default)
+      the prerelease segment ('-rc' by default) or increments it's
+      number ('-rc.1'). release removes the prerelease segment
+
+  --pre, --rc, --devel:
+      Add the prerelease segment while bumping the 
+      major, minor, or patch segment with '-b'
 
   --build BUILD:
       add build metadata specified by BUILD

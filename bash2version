@@ -28,12 +28,17 @@ SEMVER='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\-?((0|[1-9]\d*|\d*[a-z
 help() {
   echo "bash2version - bash your version number into place
 
-bash2version --set VERSION | --bump major|minor|patch|prerelease|release [--build BUILD] [-c | --commit] [-p | --push] [FILES]
+bash2version --set VERSION | --bump major|minor|patch|prerelease|release [--pre | --rc | --devel] [--build BUILD] [-c | --commit] [-p | --push] [FILES]
 
 OPTIONS:
-  -b, --bump major|minor|patch|prerelease:
+  -b, --bump major|minor|patch|prerelease|release:
       bumps the specified version segment, prerelease either adds 
-      or removes the prerelease segment ('-rc' by default)
+      the prerelease segment ('-rc' by default) or increments it's
+      number ('-rc.1'). release removes the prerelease segment
+
+  --pre, --rc, --devel:
+      Add the prerelease segment while bumping the 
+      major, minor, or patch segment with '-b'
 
   --build BUILD:
       add build metadata specified by BUILD
@@ -86,6 +91,10 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
     ;;
+    --pre | --rc | --devel)
+      SETPRERE=1
+      shift
+    ;;
     -s | --set)
       check_arg_exist "$1" "$2"
       SETVERSION=$2
@@ -133,11 +142,11 @@ set_version() {
     VERSION=$SETVERSION$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
   elif [ -n "$BUMP" ]; then
     if [ "${BUMP,,}" == "major" ]; then
-      VERSION=$((MAJOR + 1)).0.0$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
+      VERSION=$((MAJOR + 1)).0.0$(if [ -n "$SETPRERE" ]; then echo "-$PRERELEASE_STRING"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "minor" ]; then
-      VERSION=$MAJOR.$((MINOR + 1)).0$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
+      VERSION=$MAJOR.$((MINOR + 1)).0$(if [ -n "$SETPRERE" ]; then echo "-$PRERELEASE_STRING"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "patch" ]; then
-      VERSION=$MAJOR.$MINOR.$((PATCH + 1))$(if [ -n "$PRERE" ]; then echo "-$PRERE"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
+      VERSION=$MAJOR.$MINOR.$((PATCH + 1))$(if [ -n "$SETPRERE" ]; then echo "-$PRERELEASE_STRING"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)
     elif [ "${BUMP,,}" == "prerelease" ]; then
       VERSION=$MAJOR.$MINOR.$PATCH$(if [ -z "$PRERE" ]; then echo "-$PRERELEASE_STRING"; else echo "-${PRERELEASE_STRING}$(if [ -z "$PRERENUM" ]; then echo ".1"; else echo ".$((PRERENUM + 1))"; fi)$(if [ -n "$BUILD" ]; then echo "+$BUILD"; fi)"; fi)
     elif [ "${BUMP,,}" == "release" ]; then
