@@ -120,7 +120,7 @@ get_version() {
   fi
   MATCH=${FILES[0]#*;}
   if [ -f "${FILES[0]%;*}" ]; then
-    TMPVERSION=$(sed -nr "s/${MATCH/$VER/$SEMVER}/\1;\2;\3;\5;\6;\8/gp" "${FILES[0]%;*}")
+    TMPVERSION=$(sed -nr "s/.*${MATCH/$VER/$SEMVER}.*/\1;\2;\3;\5;\6;\8/gp" "${FILES[0]%;*}")
     IFS=';' read -r MAJOR MINOR PATCH PRERE PRERENUM BUILDT <<< "$TMPVERSION"; IFS=''
   else
     echo "File \"${FILES[0]%;*}\" does not exists"
